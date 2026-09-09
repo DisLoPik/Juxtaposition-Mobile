@@ -1,0 +1,95 @@
+# ---------------------------------------------------------------- Gradle
+.gradle/
+build/
+**/build/
+!src/**/build/
+.gradletasknamecache
+gradle-app.setting
+# The wrapper jar and properties are meant to be committed.
+!gradle/wrapper/gradle-wrapper.jar
+
+# ---------------------------------------------------------------- Kotlin
+.kotlin/
+*.klib
+
+# ---------------------------------------------------------------- Local machine config
+# Contains sdk.dir and other absolute paths from whoever built last.
+local.properties
+*.local
+.env
+.env.*
+
+# ---------------------------------------------------------------- Signing material
+# Never commit these; anyone holding them can publish as this app.
+*.jks
+*.keystore
+*.p12
+*.pem
+keystore.properties
+key.properties
+signing.properties
+
+# ---------------------------------------------------------------- Android build output
+*.apk
+*.aab
+*.ap_
+*.aar
+*.dex
+*.class
+output-metadata.json
+captures/
+.externalNativeBuild/
+.cxx/
+lint-results*.html
+lint-results*.xml
+release/
+
+# ---------------------------------------------------------------- IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.hprof
+
+# ---------------------------------------------------------------- Xcode and iOS
+# The project file itself is tracked; only per-user state is ignored.
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+DerivedData/
+build/iosApp/
+*.ipa
+*.dSYM
+*.dSYM.zip
+.swiftpm/
+Pods/
+Podfile.lock
+
+# ---------------------------------------------------------------- Logs and scratch
+*.log
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# ---------------------------------------------------------------- Node (tooling only)
+node_modules/
+
+# ---------------------------------------------------------------- OS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/

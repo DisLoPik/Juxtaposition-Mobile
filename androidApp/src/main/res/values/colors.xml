@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Juxtaposition's page background, so the window matches before Compose draws. -->
+    <color name="juxt_background">#1B1F3B</color>
+    <!-- Same navy as the logo artwork sits on. -->
+    <color name="ic_launcher_background">#1B1F3B</color>
+</resources>
