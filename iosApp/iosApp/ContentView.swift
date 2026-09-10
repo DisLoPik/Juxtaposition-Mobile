@@ -13,6 +13,9 @@ struct ComposeView: UIViewControllerRepresentable {
 struct ContentView: View {
     var body: some View {
         ComposeView()
-            .ignoresSafeArea()
+            // SafeAreaRegions.all covers both the container and the keyboard. Compose applies
+            // its own safe-area and IME insets, so letting SwiftUI inset as well would double
+            // the padding under text fields.
+            .ignoresSafeArea(.all)
     }
 }

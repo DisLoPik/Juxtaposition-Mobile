@@ -4,5 +4,22 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+
+	<key>CFBundleDisplayName</key>
+	<string>Juxtaposition</string>
+
+	<!-- Juxtaposition has no light mode, so the app stays dark and the status bar
+	     keeps light icons whatever the device is set to. -->
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+
+	<!-- Only HTTPS is used, so no ATS exceptions are needed. Declaring no non-exempt
+	     encryption avoids the export compliance prompt on every TestFlight upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
