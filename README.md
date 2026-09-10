@@ -142,9 +142,9 @@ Every screen is shared, so the iOS app is the same Compose UI hosted in a `UIVie
 `zlibCompress` falling back to the stored-block stream, and the `MainViewController` entry point
 that `ContentView.swift` wraps.
 
-Building it needs an **Apple Silicon Mac**. Compose Multiplatform 1.11 publishes no `iosX64`
-artifacts, so Intel Macs and Intel CI runners cannot resolve the dependencies at all; the
-declared targets are `iosArm64` (devices) and `iosSimulatorArm64` (simulator).
+Building it needs an **Apple Silicon Mac**. Compose Multiplatform removed `iosX64` in 1.11, so
+Intel Macs and Intel CI runners cannot resolve the dependencies at all; the declared targets are
+`iosArm64` (devices) and `iosSimulatorArm64` (simulator).
 
 ```
 open iosApp/iosApp.xcodeproj      # then Run, or:

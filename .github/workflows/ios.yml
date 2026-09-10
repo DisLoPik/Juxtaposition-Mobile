@@ -17,9 +17,9 @@ concurrency:
 
 jobs:
   build:
-    name: Build and test
-    # Must be Apple Silicon. Compose Multiplatform 1.11 publishes no iosX64 artifacts, so an
-    # Intel runner (macos-13) cannot resolve the dependencies at all.
+    name: Build app
+    # Must be Apple Silicon. Compose Multiplatform publishes no iosX64 artifacts, so an Intel
+    # runner (macos-13) cannot resolve the dependencies at all.
     runs-on: macos-15
 
     steps:
@@ -46,10 +46,6 @@ jobs:
         # in the Xcode build log. Gradle caches it, so the Xcode build phase reuses this.
         run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64 --stacktrace
 
-      - name: Run shared tests on iOS
-        # Exercises the HTML parsers and the painting encoder on Kotlin/Native, not just the JVM.
-        run: ./gradlew :shared:iosSimulatorArm64Test --stacktrace
-
       - name: Build app for simulator
         run: |
           xcodebuild \
@@ -62,17 +58,50 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Upload test reports on failure
-        if: failure()
+  test:
+    name: Shared tests on iOS
+    # Kept separate from the app build. A problem with the Kotlin/Native simulator test runner
+    # says nothing about whether the app itself compiles, so it must not block shipping one.
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure gradlew is executable
+        run: chmod +x gradlew
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: List available simulators
+        # The Kotlin/Native test runner needs a simulator device to exist. Printing what the
+        # image actually provides makes a "device not found" failure obvious in the log.
+        run: xcrun simctl list devices available
+
+      - name: Run shared tests
+        # Exercises the HTML parsers and the painting encoder on Kotlin/Native, not just the JVM.
+        run: ./gradlew :shared:iosSimulatorArm64Test --stacktrace
+
+      - name: Upload test reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-test-reports
-          path: shared/build/reports/
+          path: |
+            shared/build/reports/
+            shared/build/test-results/
           retention-days: 7
+          if-no-files-found: ignore
 
   unsigned-ipa:
     name: Unsigned IPA
-    # Only worth producing for a release tag or an explicit run.
+    # Only worth producing for a release tag or an explicit run. Depends on the app building,
+    # deliberately not on the test job.
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: macos-15
