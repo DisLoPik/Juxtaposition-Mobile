@@ -25,6 +25,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Git on Windows has core.filemode=false, so regenerating the wrapper there commits
+      # gradlew without its executable bit and every Gradle step fails with "Permission denied".
+      - name: Ensure gradlew is executable
+        run: chmod +x gradlew
+
       - name: Show Xcode version
         run: xcodebuild -version
 
@@ -74,6 +79,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Ensure gradlew is executable
+        run: chmod +x gradlew
 
       - uses: actions/setup-java@v4
         with:
