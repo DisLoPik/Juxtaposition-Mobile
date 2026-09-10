@@ -1,0 +1,118 @@
+name: iOS
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and test
+    # Must be Apple Silicon. Compose Multiplatform 1.11 publishes no iosX64 artifacts, so an
+    # Intel runner (macos-13) cannot resolve the dependencies at all.
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Compile shared framework
+        # Run before xcodebuild so a Kotlin error is reported on its own, rather than buried
+        # in the Xcode build log. Gradle caches it, so the Xcode build phase reuses this.
+        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+
+      - name: Run shared tests on iOS
+        # Exercises the HTML parsers and the painting encoder on Kotlin/Native, not just the JVM.
+        run: ./gradlew :shared:iosSimulatorArm64Test --stacktrace
+
+      - name: Build app for simulator
+        run: |
+          xcodebuild \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-reports
+          path: shared/build/reports/
+          retention-days: 7
+
+  unsigned-ipa:
+    name: Unsigned IPA
+    # Only worth producing for a release tag or an explicit run.
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Archive without signing
+        run: |
+          xcodebuild \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath "$RUNNER_TEMP/Juxtaposition.xcarchive" \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            archive
+
+      - name: Package as IPA
+        # An .ipa is just a zip with the .app inside a Payload directory. Without a signature
+        # this cannot be installed directly; it needs re-signing by AltStore, Sideloadly or
+        # similar on the target device.
+        run: |
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$RUNNER_TEMP/Juxtaposition.xcarchive/Products/Applications/Juxtaposition.app" \
+                "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          zip -qry Juxtaposition-unsigned.ipa Payload
+          ls -lh Juxtaposition-unsigned.ipa
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Juxtaposition-unsigned-ipa
+          path: ${{ runner.temp }}/Juxtaposition-unsigned.ipa
+          retention-days: 30
