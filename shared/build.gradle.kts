@@ -14,6 +14,8 @@ kotlin {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 
+    // Compose Multiplatform 1.11 ships no iosX64 artifacts, so Intel simulators are not a
+    // supported target. Builds need an Apple Silicon Mac.
     listOf(
         iosArm64(),
         iosSimulatorArm64()
