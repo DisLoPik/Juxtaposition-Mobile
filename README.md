@@ -1,8 +1,8 @@
-# Juxtaposition for Android
+# Juxtaposition
 
-An unofficial Android client for [Juxtaposition](https://juxt.pretendo.network), the Miiverse
-revival run by [Pretendo Network](https://pretendo.network). Built with Kotlin Multiplatform and
-Compose Multiplatform, with an iOS target already wired up for later.
+An unofficial Android and iOS client for [Juxtaposition](https://juxt.pretendo.network), the
+Miiverse revival run by [Pretendo Network](https://pretendo.network). Built with Kotlin
+Multiplatform and Compose Multiplatform, so both platforms run the same UI.
 
 You can sign in with your Pretendo Network ID, read the activity feeds, browse every listed
 community, view profiles and notifications, and report or delete posts. It also does what the
@@ -128,15 +128,53 @@ Putting `--btn` on `primary` is what makes text disappear.
 
 ## Building
 
-Android is the supported target today:
+### Android
 
 ```
 ./gradlew :androidApp:assembleDebug        # APK in androidApp/build/outputs/apk/debug/
 ./gradlew :shared:testAndroidHostTest      # parser tests
 ```
 
-The iOS target compiles as part of the Kotlin Multiplatform setup but needs a Mac and Xcode to
-build the app itself; nothing in `commonMain` is Android-only.
+### iOS
+
+Every screen is shared, so the iOS app is the same Compose UI hosted in a `UIViewController`.
+`shared/src/iosMain` holds only the three platform pieces: `TokenStore` on `NSUserDefaults`,
+`zlibCompress` falling back to the stored-block stream, and the `MainViewController` entry point
+that `ContentView.swift` wraps.
+
+Building it needs an **Apple Silicon Mac**. Compose Multiplatform 1.11 publishes no `iosX64`
+artifacts, so Intel Macs and Intel CI runners cannot resolve the dependencies at all; the
+declared targets are `iosArm64` (devices) and `iosSimulatorArm64` (simulator).
+
+```
+open iosApp/iosApp.xcodeproj      # then Run, or:
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp   -sdk iphonesimulator -destination 'generic/platform=iOS Simulator'   CODE_SIGNING_ALLOWED=NO build
+```
+
+Xcode invokes Gradle itself: the target's `Compile Kotlin Framework` phase runs
+`:shared:embedAndSignAppleFrameworkForXcode`, so there is no separate step to remember. Signing
+for a real device needs an Apple Developer team in `iosApp/Configuration/Config.xcconfig`.
+
+`.github/workflows/ios.yml` builds and tests iOS on every push. It also runs the shared tests
+through Kotlin/Native (`:shared:iosSimulatorArm64Test`), which is the only place the parsers and
+the painting encoder are exercised outside the JVM. Tagging `v*` or dispatching the workflow by
+hand additionally produces an unsigned `.ipa` artifact, which has to be re-signed by AltStore,
+Sideloadly or similar before it will install.
+
+### Release builds
+
+`assembleRelease` signs the APK when a `keystore.properties` sits in the repository root.
+Copy [keystore.properties.example](./keystore.properties.example) to `keystore.properties` and
+fill it in; both that file and the keystore it points at are gitignored.
+
+```
+./gradlew :androidApp:assembleRelease      # androidApp/build/outputs/apk/release/
+```
+
+Without `keystore.properties` the build still succeeds, but emits
+`androidApp-release-unsigned.apk`, which no device will install. Bump `versionCode` in
+`androidApp/build.gradle.kts` for every published release, or Android refuses to install the
+new build over the old one.
 
 ## Notes
 
